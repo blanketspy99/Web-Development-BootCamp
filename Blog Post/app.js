@@ -4,6 +4,20 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const _ = require("lodash");
+
+const mongoose = require("mongoose");
+
+mongoose.connect("mongodb://localhost:27017/blogDB");
+
+const postSchema = {
+  title: {
+    type: String,
+    required: [true]
+  },
+  content: String
+};
+
+const Post = mongoose.model("Post",postSchema);
 // const { post } = require("jquery");
 
 const homeStartingContent = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
@@ -21,10 +35,13 @@ app.use(express.static("public"));
 var posts=[];
 
 app.get("/", function(req, res){
-  res.render('home', {
-    "startingContent":homeStartingContent,
-    "posts": posts
+  Post.find({},(err, output) => {
+    res.render('home', {
+      "startingContent":homeStartingContent,
+      "posts": output
+    });
   });
+  
 });
 
 app.get("/contact", function(req, res){
@@ -44,24 +61,40 @@ app.post("/compose", function(req, res){
     title: req.body.postTitle,
     content: req.body.postContent
   };
-  posts.push(post);
-  console.log(posts);
-
-  res.redirect("/");
-})
-
-app.get("/posts/:postName", function(req, res){
-  const requestedTitle = _.lowerCase(req.params.postName);
-  console.log(requestedTitle);
-  posts.forEach(post => {
-    if(_.lowerCase(post.title) == requestedTitle){
-      console.log(post.title);
-      res.render('post',{
-        title:post.title,
-        content:post.content
-      });
+  const dbpost = new Post(post);
+  dbpost.save(err => {
+    if (!err){
+      res.redirect("/");
     }
   });
+  // posts.push(post);
+  // console.log(posts);
+
+});
+
+app.get("/posts/:postId", function(req, res){
+  Post.findOne({_id: req.params.postId}, (err, post) => {
+    if(!err){
+    res.render('post',{
+      title:post.title,
+      content:post.content
+    });}
+    else {
+      res.redirect("/");
+    }
+
+  });
+  // const requestedTitle = _.lowerCase(req.params.postName);
+  // console.log(requestedTitle);
+  // posts.forEach(post => {
+  //   if(_.lowerCase(post.title) == requestedTitle){
+  //     console.log(post.title);
+  //     res.render('post',{
+  //       title:post.title,
+  //       content:post.content
+  //     });
+  //   }
+  // });
   
   
 });
